@@ -1,3 +1,7 @@
 <Solution>
+  <Project Path="OperationalAnomalyDetection.Application/OperationalAnomalyDetection.Application.csproj" Id="fa21e23c-d258-4f5a-8454-a5f5e9982e2c" />
+  <Project Path="OperationalAnomalyDetection.Domain/OperationalAnomalyDetection.Domain.csproj" Id="94af7b01-23df-4539-9e00-541ac75b2a7a" />
+  <Project Path="OperationalAnomalyDetection.Infrastructure/OperationalAnomalyDetection.Infrastructure.csproj" Id="c57caa55-4f04-4696-adb2-ef33ab6d7b13" />
+  <Project Path="OperationalAnomalyDetection.ML/OperationalAnomalyDetection.ML.csproj" Id="d9fcb30c-252d-438f-a263-69c35174a357" />
   <Project Path="OperationalAnomalyDetection.Web/OperationalAnomalyDetection.Web.csproj" />
 </Solution>
