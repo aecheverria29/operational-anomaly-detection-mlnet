@@ -1,3 +1,4 @@
+@using System.Globalization
 @model OperationalAnomalyDetection.Web.ViewModels.AnalysisResultViewModel
 
 @{
@@ -5,42 +6,120 @@
     var anomalyRate = Model.TotalRecords == 0
         ? 0d
         : (double)Model.TotalAnomalies / Model.TotalRecords * 100d;
+
+    var chartPoints = Model.Results.Select((row, index) => new { Row = row, Index = index }).ToList();
+    var chartWidth = 900d;
+    var chartHeight = 280d;
+    var padding = 36d;
+    var plotWidth = chartWidth - padding * 2d;
+    var plotHeight = chartHeight - padding * 2d;
+    var minValue = chartPoints.Count == 0 ? 0d : chartPoints.Min(point => point.Row.Value);
+    var maxValue = chartPoints.Count == 0 ? 1d : chartPoints.Max(point => point.Row.Value);
+
+    if (Math.Abs(maxValue - minValue) < 0.0001d)
+    {
+        maxValue += 1d;
+        minValue -= 1d;
+    }
+
+    var linePoints = string.Join(" ", chartPoints.Select(point =>
+    {
+        var x = chartPoints.Count == 1
+            ? padding + plotWidth / 2d
+            : padding + point.Index * (plotWidth / (chartPoints.Count - 1));
+        var y = padding + (maxValue - point.Row.Value) * (plotHeight / (maxValue - minValue));
+
+        return string.Create(CultureInfo.InvariantCulture, $"{x:0.##},{y:0.##}");
+    }));
 }
 
-<div class="py-4">
-    <div class="mb-4">
-        <p class="text-uppercase text-muted fw-semibold mb-2">Analysis complete</p>
-        <h1 class="display-6 fw-semibold">Analysis results</h1>
-        <p class="lead text-muted mb-0">
-            Results for <span class="fw-semibold text-body">@Model.DataSourceName</span>
-        </p>
+<div class="py-4 py-lg-5">
+    <div class="row align-items-end g-4 mb-4">
+        <div class="col-lg-8">
+            <p class="text-uppercase text-muted fw-semibold mb-2">Analysis complete</p>
+            <h1 class="display-5 fw-semibold mb-3">Operational anomaly results</h1>
+            <p class="lead text-muted mb-0">
+                Review the detected anomaly points and use the timeline to explain the finding quickly in a demo.
+            </p>
+        </div>
+        <div class="col-lg-4">
+            <div class="border rounded p-3 bg-light">
+                <div class="text-muted small mb-1">Analyzed file</div>
+                <div class="fw-semibold text-break">@Model.DataSourceName</div>
+            </div>
+        </div>
     </div>
 
     <div class="row g-3 mb-4">
         <div class="col-md-4">
             <div class="border rounded p-3 bg-white h-100">
                 <div class="text-muted small">Total records</div>
-                <div class="fs-3 fw-semibold">@Model.TotalRecords</div>
+                <div class="fs-2 fw-semibold">@Model.TotalRecords</div>
             </div>
         </div>
         <div class="col-md-4">
             <div class="border rounded p-3 bg-white h-100">
                 <div class="text-muted small">Total anomalies</div>
-                <div class="fs-3 fw-semibold text-danger">@Model.TotalAnomalies</div>
+                <div class="fs-2 fw-semibold text-danger">@Model.TotalAnomalies</div>
             </div>
         </div>
         <div class="col-md-4">
             <div class="border rounded p-3 bg-white h-100">
                 <div class="text-muted small">Anomaly rate</div>
-                <div class="fs-3 fw-semibold">@anomalyRate.ToString("0.##")%</div>
+                <div class="fs-2 fw-semibold">@anomalyRate.ToString("0.##")%</div>
             </div>
+        </div>
+    </div>
+
+    <div class="border rounded bg-white mb-4">
+        <div class="p-3 border-bottom d-flex flex-column flex-md-row justify-content-between gap-2">
+            <div>
+                <h2 class="h5 mb-1">Metric timeline</h2>
+                <p class="text-muted mb-0">Red points mark rows classified as anomalies.</p>
+            </div>
+            <div class="d-flex align-items-center gap-3 small">
+                <span><span class="badge rounded-pill text-bg-secondary">Normal</span></span>
+                <span><span class="badge rounded-pill text-bg-danger">Anomaly</span></span>
+            </div>
+        </div>
+
+        <div class="p-3">
+            @if (chartPoints.Count == 0)
+            {
+                <div class="alert alert-secondary mb-0">No points were returned for this analysis.</div>
+            }
+            else
+            {
+                <svg viewBox="0 0 900 280" role="img" aria-label="Timeline chart of metric values and anomalies" class="w-100 border rounded bg-light">
+                    <line x1="36" y1="244" x2="864" y2="244" stroke="#dee2e6" stroke-width="1" />
+                    <line x1="36" y1="36" x2="36" y2="244" stroke="#dee2e6" stroke-width="1" />
+                    <text x="36" y="24" fill="#6c757d" font-size="14">Value</text>
+                    <text x="805" y="268" fill="#6c757d" font-size="14">Time</text>
+
+                    <polyline points="@linePoints" fill="none" stroke="#0d6efd" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />
+
+                    @foreach (var point in chartPoints)
+                    {
+                        var x = chartPoints.Count == 1
+                            ? padding + plotWidth / 2d
+                            : padding + point.Index * (plotWidth / (chartPoints.Count - 1));
+                        var y = padding + (maxValue - point.Row.Value) * (plotHeight / (maxValue - minValue));
+                        var fill = point.Row.IsAnomaly ? "#dc3545" : "#6c757d";
+                        var radius = point.Row.IsAnomaly ? 6 : 4;
+
+                        <circle cx="@x.ToString("0.##", CultureInfo.InvariantCulture)" cy="@y.ToString("0.##", CultureInfo.InvariantCulture)" r="@radius" fill="@fill">
+                            <title>@point.Row.Timestamp.ToString("yyyy-MM-dd HH:mm:ss") - @point.Row.Value.ToString("0.####")</title>
+                        </circle>
+                    }
+                </svg>
+            }
         </div>
     </div>
 
     <div class="border rounded bg-white">
         <div class="p-3 border-bottom">
             <h2 class="h5 mb-1">Detected points</h2>
-            <p class="text-muted mb-0">Anomalous rows are highlighted for quick review.</p>
+            <p class="text-muted mb-0">Use the status column to focus the review on anomalous rows.</p>
         </div>
 
         <div class="table-responsive">
@@ -78,6 +157,6 @@
     </div>
 
     <div class="mt-4">
-        <a asp-controller="Analysis" asp-action="Index" class="btn btn-outline-secondary">Analyze another file</a>
+        <a asp-controller="Analysis" asp-action="Index" class="btn btn-outline-secondary btn-lg">Analyze another CSV</a>
     </div>
 </div>

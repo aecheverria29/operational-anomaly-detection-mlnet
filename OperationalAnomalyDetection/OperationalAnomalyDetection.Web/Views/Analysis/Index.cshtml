@@ -4,76 +4,116 @@
     ViewData["Title"] = "Operational Anomaly Detection";
 }
 
-<div class="py-4">
-    <div class="mb-4">
-        <p class="text-uppercase text-muted fw-semibold mb-2">MVP analysis workflow</p>
-        <h1 class="display-6 fw-semibold">Operational Anomaly Detection</h1>
-        <p class="lead text-muted mb-0">
-            Upload a CSV with operational metrics and run anomaly detection over the Value series.
-        </p>
+<div class="py-4 py-lg-5">
+    <div class="row align-items-center g-4 mb-5">
+        <div class="col-lg-8">
+            <p class="text-uppercase text-muted fw-semibold mb-2">Operational metrics MVP</p>
+            <h1 class="display-5 fw-semibold mb-3">Detect anomalies in operational CSV data</h1>
+            <p class="lead text-muted mb-0">
+                Upload a timestamped metric file, run anomaly detection, and review the rows that need attention in a clear results view.
+            </p>
+        </div>
+        <div class="col-lg-4">
+            <div class="border rounded p-3 bg-light">
+                <div class="fw-semibold mb-2">Required columns</div>
+                <div class="d-flex gap-2 mb-2">
+                    <span class="badge text-bg-secondary">Timestamp</span>
+                    <span class="badge text-bg-secondary">Value</span>
+                </div>
+                <p class="small text-muted mb-0">Use at least 8 data rows so the model has enough history to analyze.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="border rounded p-3 h-100 bg-white">
+                <div class="text-primary fw-semibold mb-2">1. Upload</div>
+                <p class="text-muted mb-0">Select a CSV file containing operational metric readings.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="border rounded p-3 h-100 bg-white">
+                <div class="text-primary fw-semibold mb-2">2. Analyze</div>
+                <p class="text-muted mb-0">The backend loads the data and runs the ML.NET anomaly detector.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="border rounded p-3 h-100 bg-white">
+                <div class="text-primary fw-semibold mb-2">3. Review</div>
+                <p class="text-muted mb-0">Inspect totals, anomaly rate, highlighted rows, and the timeline chart.</p>
+            </div>
+        </div>
     </div>
 
     <div class="row g-4">
         <div class="col-lg-7">
             <div class="border rounded p-4 bg-white">
-                <h2 class="h4 mb-3">Analyze a CSV file</h2>
+                <div class="mb-4">
+                    <h2 class="h4 mb-1">Run analysis</h2>
+                    <p class="text-muted mb-0">Choose your CSV and keep the default sensitivity unless you want to tune detection.</p>
+                </div>
 
                 <form asp-controller="Analysis" asp-action="Analyze" method="post" enctype="multipart/form-data">
-                    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+                    @if (!ViewData.ModelState.IsValid)
+                    {
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+                    }
 
                     <div class="mb-3">
                         <label asp-for="File" class="form-label fw-semibold">CSV file</label>
-                        <input asp-for="File" class="form-control" type="file" accept=".csv" />
-                        <div class="form-text">Use a CSV file with a header row and at least 8 data rows.</div>
+                        <input asp-for="File" class="form-control form-control-lg" type="file" accept=".csv" />
+                        <div class="form-text">Accepted format: .csv with a header row and numeric values.</div>
                         <span asp-validation-for="File" class="text-danger"></span>
                     </div>
 
                     <div class="mb-4">
                         <label asp-for="Sensitivity" class="form-label fw-semibold">Sensitivity</label>
                         <input asp-for="Sensitivity" class="form-control" type="number" step="0.01" min="0" max="100" />
-                        <div class="form-text">Higher values make the analysis more conservative. The default is 95.</div>
+                        <div class="form-text">Default: 95. Higher values make the detector more conservative.</div>
                         <span asp-validation-for="Sensitivity" class="text-danger"></span>
                     </div>
 
-                    <button type="submit" class="btn btn-primary btn-lg">Run analysis</button>
+                    <button type="submit" class="btn btn-primary btn-lg px-4">Run anomaly analysis</button>
                 </form>
             </div>
         </div>
 
         <div class="col-lg-5">
             <div class="border rounded p-4 bg-light h-100">
-                <h2 class="h5 mb-3">Expected CSV format</h2>
+                <h2 class="h4 mb-3">CSV example</h2>
                 <p class="text-muted">
-                    The MVP expects two columns named exactly like this. Timestamps should be parseable dates, and values should be numeric.
+                    The MVP reads the first two columns as timestamp and metric value. Keep the headers exactly as shown.
                 </p>
 
-                <table class="table table-sm table-bordered bg-white mb-3">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Timestamp</th>
-                            <th>Value</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>2026-04-12T10:00:00</td>
-                            <td>10</td>
-                        </tr>
-                        <tr>
-                            <td>2026-04-12T10:01:00</td>
-                            <td>11</td>
-                        </tr>
-                        <tr>
-                            <td>2026-04-12T10:02:00</td>
-                            <td>80</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered bg-white mb-3">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>2026-04-12T10:00:00</td>
+                                <td>10</td>
+                            </tr>
+                            <tr>
+                                <td>2026-04-12T10:01:00</td>
+                                <td>11</td>
+                            </tr>
+                            <tr>
+                                <td>2026-04-12T10:02:00</td>
+                                <td>80</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
 
-                <p class="small text-muted mb-0">
-                    Required columns: <span class="badge text-bg-secondary">Timestamp</span>
-                    <span class="badge text-bg-secondary">Value</span>
-                </p>
+                <div class="alert alert-secondary mb-0" role="note">
+                    For a clean demo, use a CSV with a stable trend and one obvious spike.
+                </div>
             </div>
         </div>
     </div>
