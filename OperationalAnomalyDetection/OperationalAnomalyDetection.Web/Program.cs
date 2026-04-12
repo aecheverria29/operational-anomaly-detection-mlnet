@@ -1,7 +1,16 @@
+using OperationalAnomalyDetection.Application.Interfaces;
+using OperationalAnomalyDetection.Application.Services;
+using OperationalAnomalyDetection.Domain.Interfaces;
+using OperationalAnomalyDetection.Infrastructure.Repositories;
+using OperationalAnomalyDetection.ML.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddScoped<IAnomalyAnalysisService, AnomalyAnalysisService>();
+builder.Services.AddScoped<IOperationalDataRepository, CsvOperationalDataRepository>();
+builder.Services.AddScoped<IAnomalyDetectionAnalyzer, AnomalyDetectionScorer>();
 
 var app = builder.Build();
 

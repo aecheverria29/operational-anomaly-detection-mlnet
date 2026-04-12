@@ -1,13 +1,17 @@
 using Microsoft.ML;
 using OperationalAnomalyDetection.Domain.Entities;
+using OperationalAnomalyDetection.Domain.Interfaces;
+using OperationalAnomalyDetection.Domain.ValueObjects;
 using OperationalAnomalyDetection.ML.Contracts;
 using OperationalAnomalyDetection.ML.Models;
 using OperationalAnomalyDetection.ML.Options;
 
 namespace OperationalAnomalyDetection.ML.Services;
 
-public sealed class AnomalyDetectionScorer : IAnomalyDetectionScorer
+public sealed class AnomalyDetectionScorer : IAnomalyDetectionScorer, IAnomalyDetectionAnalyzer
 {
+    private const int MinimumRecordCount = 8;
+
     private readonly MLContext _mlContext;
     private readonly IAnomalyDetectionTrainer _trainer;
 
@@ -22,6 +26,20 @@ public sealed class AnomalyDetectionScorer : IAnomalyDetectionScorer
         _trainer = trainer ?? new AnomalyDetectionTrainer(_mlContext);
     }
 
+    public IReadOnlyList<AnomalyDetectionResult> Analyze(
+        IReadOnlyList<OperationalMetricRecord> records,
+        AnalysisRequest request)
+    {
+        var options = new AnomalyDetectionOptions();
+
+        if (request.Sensitivity > 0d)
+        {
+            options.Confidence = request.Sensitivity;
+        }
+
+        return Score(records, options);
+    }
+
     public IReadOnlyList<AnomalyDetectionResult> Score(
         IReadOnlyList<OperationalMetricRecord> records,
         AnomalyDetectionOptions? options = null)
@@ -31,6 +49,13 @@ public sealed class AnomalyDetectionScorer : IAnomalyDetectionScorer
             return Array.Empty<AnomalyDetectionResult>();
         }
 
+        if (records.Count < MinimumRecordCount)
+        {
+            throw new InvalidOperationException(
+                $"At least {MinimumRecordCount} records are required to run anomaly detection.");
+        }
+
+        var effectiveOptions = CreateOptionsForRecordCount(records.Count, options);
         var inputRows = records.Select(record => new MlInputRow
         {
             Timestamp = record.Timestamp,
@@ -38,7 +63,7 @@ public sealed class AnomalyDetectionScorer : IAnomalyDetectionScorer
         });
 
         var dataView = _mlContext.Data.LoadFromEnumerable(inputRows);
-        var model = _trainer.Train(records, options);
+        var model = _trainer.Train(records, effectiveOptions);
         var transformedData = model.Transform(dataView);
 
         var predictions = _mlContext.Data
@@ -55,5 +80,23 @@ public sealed class AnomalyDetectionScorer : IAnomalyDetectionScorer
             LowerBound = prediction.Value,
             UpperBound = prediction.Value
         }).ToList();
+    }
+
+    private static AnomalyDetectionOptions CreateOptionsForRecordCount(
+        int recordCount,
+        AnomalyDetectionOptions? options)
+    {
+        var source = options ?? new AnomalyDetectionOptions();
+        var trainingWindowSize = Math.Min(source.TrainingWindowSize, recordCount);
+        var seasonalityWindowSize = Math.Min(source.SeasonalityWindowSize, Math.Max(2, trainingWindowSize / 2));
+        var pValueHistoryLength = Math.Min(source.PValueHistoryLength, recordCount);
+
+        return new AnomalyDetectionOptions
+        {
+            Confidence = source.Confidence,
+            TrainingWindowSize = trainingWindowSize,
+            SeasonalityWindowSize = seasonalityWindowSize,
+            PValueHistoryLength = pValueHistoryLength
+        };
     }
 }

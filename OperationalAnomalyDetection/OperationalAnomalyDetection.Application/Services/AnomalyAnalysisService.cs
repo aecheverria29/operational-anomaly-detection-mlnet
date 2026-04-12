@@ -1,5 +1,6 @@
 using OperationalAnomalyDetection.Application.Commands;
 using OperationalAnomalyDetection.Application.DTOs;
+using OperationalAnomalyDetection.Application.Exceptions;
 using OperationalAnomalyDetection.Application.Interfaces;
 using OperationalAnomalyDetection.Domain.Interfaces;
 using OperationalAnomalyDetection.Domain.ValueObjects;
@@ -8,11 +9,17 @@ namespace OperationalAnomalyDetection.Application.Services;
 
 public sealed class AnomalyAnalysisService : IAnomalyAnalysisService
 {
-    private readonly IOperationalDataRepository _operationalDataRepository;
+    private const int MinimumRecordCount = 8;
 
-    public AnomalyAnalysisService(IOperationalDataRepository operationalDataRepository)
+    private readonly IOperationalDataRepository _operationalDataRepository;
+    private readonly IAnomalyDetectionAnalyzer _anomalyDetectionAnalyzer;
+
+    public AnomalyAnalysisService(
+        IOperationalDataRepository operationalDataRepository,
+        IAnomalyDetectionAnalyzer anomalyDetectionAnalyzer)
     {
         _operationalDataRepository = operationalDataRepository;
+        _anomalyDetectionAnalyzer = anomalyDetectionAnalyzer;
     }
 
     public async Task<AnalyzeDatasetResultDto> AnalyzeAsync(
@@ -28,13 +35,21 @@ public sealed class AnomalyAnalysisService : IAnomalyAnalysisService
 
         var records = await _operationalDataRepository.LoadAsync(request, cancellationToken);
 
-        var results = records
-            .Select(record => new AnomalyResultDto
+        if (records.Count < MinimumRecordCount)
+        {
+            throw new AnalysisCannotBeCompletedException(
+                $"The CSV file must contain at least {MinimumRecordCount} data rows to run anomaly detection.");
+        }
+
+        var analysisResults = _anomalyDetectionAnalyzer.Analyze(records, request);
+
+        var results = analysisResults
+            .Select(result => new AnomalyResultDto
             {
-                Timestamp = record.Timestamp,
-                Value = record.Value,
-                IsAnomaly = false,
-                Score = 0f
+                Timestamp = result.Timestamp,
+                Value = result.Value,
+                IsAnomaly = result.IsAnomaly,
+                Score = result.Score
             })
             .ToList();
 

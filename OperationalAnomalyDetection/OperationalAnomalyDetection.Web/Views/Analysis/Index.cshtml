@@ -1,0 +1,80 @@
+@model OperationalAnomalyDetection.Web.ViewModels.AnalysisUploadViewModel
+
+@{
+    ViewData["Title"] = "Operational Anomaly Detection";
+}
+
+<div class="py-4">
+    <div class="mb-4">
+        <p class="text-uppercase text-muted fw-semibold mb-2">MVP analysis workflow</p>
+        <h1 class="display-6 fw-semibold">Operational Anomaly Detection</h1>
+        <p class="lead text-muted mb-0">
+            Upload a CSV with operational metrics and run anomaly detection over the Value series.
+        </p>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="border rounded p-4 bg-white">
+                <h2 class="h4 mb-3">Analyze a CSV file</h2>
+
+                <form asp-controller="Analysis" asp-action="Analyze" method="post" enctype="multipart/form-data">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="File" class="form-label fw-semibold">CSV file</label>
+                        <input asp-for="File" class="form-control" type="file" accept=".csv" />
+                        <div class="form-text">Use a CSV file with a header row and at least 8 data rows.</div>
+                        <span asp-validation-for="File" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="Sensitivity" class="form-label fw-semibold">Sensitivity</label>
+                        <input asp-for="Sensitivity" class="form-control" type="number" step="0.01" min="0" max="100" />
+                        <div class="form-text">Higher values make the analysis more conservative. The default is 95.</div>
+                        <span asp-validation-for="Sensitivity" class="text-danger"></span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-lg">Run analysis</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="border rounded p-4 bg-light h-100">
+                <h2 class="h5 mb-3">Expected CSV format</h2>
+                <p class="text-muted">
+                    The MVP expects two columns named exactly like this. Timestamps should be parseable dates, and values should be numeric.
+                </p>
+
+                <table class="table table-sm table-bordered bg-white mb-3">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>2026-04-12T10:00:00</td>
+                            <td>10</td>
+                        </tr>
+                        <tr>
+                            <td>2026-04-12T10:01:00</td>
+                            <td>11</td>
+                        </tr>
+                        <tr>
+                            <td>2026-04-12T10:02:00</td>
+                            <td>80</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p class="small text-muted mb-0">
+                    Required columns: <span class="badge text-bg-secondary">Timestamp</span>
+                    <span class="badge text-bg-secondary">Value</span>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,83 @@
+@model OperationalAnomalyDetection.Web.ViewModels.AnalysisResultViewModel
+
+@{
+    ViewData["Title"] = "Analysis Result";
+    var anomalyRate = Model.TotalRecords == 0
+        ? 0d
+        : (double)Model.TotalAnomalies / Model.TotalRecords * 100d;
+}
+
+<div class="py-4">
+    <div class="mb-4">
+        <p class="text-uppercase text-muted fw-semibold mb-2">Analysis complete</p>
+        <h1 class="display-6 fw-semibold">Analysis results</h1>
+        <p class="lead text-muted mb-0">
+            Results for <span class="fw-semibold text-body">@Model.DataSourceName</span>
+        </p>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="border rounded p-3 bg-white h-100">
+                <div class="text-muted small">Total records</div>
+                <div class="fs-3 fw-semibold">@Model.TotalRecords</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="border rounded p-3 bg-white h-100">
+                <div class="text-muted small">Total anomalies</div>
+                <div class="fs-3 fw-semibold text-danger">@Model.TotalAnomalies</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="border rounded p-3 bg-white h-100">
+                <div class="text-muted small">Anomaly rate</div>
+                <div class="fs-3 fw-semibold">@anomalyRate.ToString("0.##")%</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="border rounded bg-white">
+        <div class="p-3 border-bottom">
+            <h2 class="h5 mb-1">Detected points</h2>
+            <p class="text-muted mb-0">Anomalous rows are highlighted for quick review.</p>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Value</th>
+                        <th>Status</th>
+                        <th>Score</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model.Results)
+                    {
+                        <tr class="@(row.IsAnomaly ? "table-danger" : string.Empty)">
+                            <td>@row.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                            <td>@row.Value.ToString("0.####")</td>
+                            <td>
+                                @if (row.IsAnomaly)
+                                {
+                                    <span class="badge text-bg-danger">Anomaly</span>
+                                }
+                                else
+                                {
+                                    <span class="badge text-bg-secondary">Normal</span>
+                                }
+                            </td>
+                            <td>@row.Score.ToString("0.####")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <a asp-controller="Analysis" asp-action="Index" class="btn btn-outline-secondary">Analyze another file</a>
+    </div>
+</div>
