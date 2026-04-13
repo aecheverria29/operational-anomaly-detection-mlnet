@@ -1,3 +1,4 @@
+# Open-source software
 # Operational Anomaly Detection with ML.NET
 
 A .NET 8 MVP that detects anomalies in operational CSV data using ML.NET and presents the results in a clean ASP.NET Core MVC interface.
